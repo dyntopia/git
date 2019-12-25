@@ -34,7 +34,7 @@ static enum missing_commit_check_level get_missing_commit_check_level(void)
 	return MISSING_COMMIT_CHECK_IGNORE;
 }
 
-void append_todo_help(unsigned keep_empty, int command_count,
+void append_todo_help(unsigned no_ask_empty, int command_count,
 		      const char *shortrevisions, const char *shortonto,
 		      struct strbuf *buf)
 {
@@ -87,7 +87,7 @@ void append_todo_help(unsigned keep_empty, int command_count,
 
 	strbuf_add_commented_lines(buf, msg, strlen(msg));
 
-	if (!keep_empty) {
+	if (!no_ask_empty) {
 		msg = _("Note that empty commits are commented out");
 		strbuf_add_commented_lines(buf, msg, strlen(msg));
 	}
