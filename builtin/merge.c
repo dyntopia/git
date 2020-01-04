@@ -62,8 +62,8 @@ static int show_diffstat = 1, shortlog_len = -1, squash;
 static int option_commit = -1;
 static int option_edit = -1;
 static int allow_trivial = 1, have_message, verify_signatures;
-static int check_trust_level = 1;
 static int overwrite_ignore = 1;
+static unsigned gpg_flags = GPG_VERIFY_SHORT | GPG_VERIFY_COMPAT;
 static struct strbuf merge_msg = STRBUF_INIT;
 static struct strategy **use_strategies;
 static size_t use_strategies_nr, use_strategies_alloc;
@@ -633,7 +633,7 @@ static int git_merge_config(const char *k, const char *v, void *cb)
 		sign_commit = git_config_bool(k, v) ? "" : NULL;
 		return 0;
 	} else if (!strcmp(k, "gpg.mintrustlevel")) {
-		check_trust_level = 0;
+		gpg_flags ^= GPG_VERIFY_COMPAT;
 	}
 
 	status = fmt_merge_msg_config(k, v, cb);
@@ -1399,9 +1399,10 @@ int cmd_merge(int argc, const char **argv, const char *prefix)
 		if (remoteheads->next)
 			die(_("Can merge only exactly one commit into empty head"));
 
-		if (verify_signatures)
-			verify_merge_signature(remoteheads->item, verbosity,
-					       check_trust_level);
+		if (verify_signatures &&
+		    gpg_verify_commit(&remoteheads->item->object.oid, NULL,
+				      NULL, gpg_flags))
+			die(_("Signature verification failed"));
 
 		remote_head_oid = &remoteheads->item->object.oid;
 		read_empty(remote_head_oid, 0);
@@ -1424,8 +1425,9 @@ int cmd_merge(int argc, const char **argv, const char *prefix)
 
 	if (verify_signatures) {
 		for (p = remoteheads; p; p = p->next) {
-			verify_merge_signature(p->item, verbosity,
-					       check_trust_level);
+			if (gpg_verify_commit(&p->item->object.oid, NULL, NULL,
+					      gpg_flags))
+				die(_("Signature verification failed"));
 		}
 	}
 

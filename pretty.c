@@ -1302,7 +1302,8 @@ static size_t format_commit_one(struct strbuf *sb, /* in UTF-8 */
 
 	if (placeholder[0] == 'G') {
 		if (!c->signature_check.result)
-			check_commit_signature(c->commit, &(c->signature_check));
+			gpg_verify_commit(&c->commit->object.oid, NULL,
+					  &(c->signature_check), 0);
 		switch (placeholder[1]) {
 		case 'G':
 			if (c->signature_check.gpg_output)

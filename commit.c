@@ -1116,7 +1116,8 @@ free_return:
 	free(buf);
 }
 
-int check_commit_signature(const struct commit *commit, struct signature_check *sigc)
+static int check_commit_signature(const struct commit *commit,
+				  struct signature_check *sigc)
 {
 	struct strbuf payload = STRBUF_INIT;
 	struct strbuf signature = STRBUF_INIT;
@@ -1136,21 +1137,43 @@ int check_commit_signature(const struct commit *commit, struct signature_check *
 	return ret;
 }
 
-void verify_merge_signature(struct commit *commit, int verbosity,
-			    int check_trust)
+int gpg_verify_commit(const struct object_id *oid, const char *name_to_report,
+		      struct signature_check *sigc, unsigned flags)
 {
-	struct signature_check signature_check;
+	struct object *obj;
+	struct signature_check tmp = { 0 };
 	int ret;
-	memset(&signature_check, 0, sizeof(signature_check));
 
-	ret = check_commit_signature(commit, &signature_check);
-	ret |= check_trust && signature_check.trust_level < TRUST_MARGINAL;
-	print_signature_buffer(&commit->object.oid, &signature_check, ret,
-			       GPG_VERIFY_SHORT);
-	if (ret)
-		die(_("Signature verification failed"));
+	if (!sigc)
+		sigc = &tmp;
 
-	signature_check_clear(&signature_check);
+	obj = parse_object(the_repository, oid);
+	if (!obj)
+		return error("%s: unable to read file.",
+			     name_to_report ?
+			     name_to_report :
+			     find_unique_abbrev(oid, DEFAULT_ABBREV));
+
+	if (obj->type != OBJ_COMMIT)
+		return error("%s: cannot verify a non-commit object of type %s.",
+			     name_to_report ?
+			     name_to_report :
+			     find_unique_abbrev(oid, DEFAULT_ABBREV),
+			     type_name(obj->type));
+
+	ret = check_commit_signature((struct commit *)obj, sigc);
+	/*
+	 * Merge operations has historically required a trust level of
+	 * 'marginal' or higher as a default.  Backward-compatibility is
+	 * maintained here -- however, new users of this function should
+	 * delegate trust level verification to the GPG interface.
+	 */
+	ret |= flags & GPG_VERIFY_COMPAT && sigc->trust_level < TRUST_MARGINAL;
+
+	print_signature_buffer(oid, sigc, ret, flags);
+	signature_check_clear(&tmp);
+
+	return ret;
 }
 
 void append_merge_tag_headers(struct commit_list *parents,

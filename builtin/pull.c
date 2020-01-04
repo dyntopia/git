@@ -107,11 +107,11 @@ static char *opt_ff;
 static char *opt_verify_signatures;
 static int opt_autostash = -1;
 static int config_autostash;
-static int check_trust_level = 1;
 static struct argv_array opt_strategies = ARGV_ARRAY_INIT;
 static struct argv_array opt_strategy_opts = ARGV_ARRAY_INIT;
 static char *opt_gpg_sign;
 static int opt_allow_unrelated_histories;
+static unsigned gpg_flags = GPG_VERIFY_SHORT | GPG_VERIFY_COMPAT;
 
 /* Options passed to git-fetch */
 static char *opt_all;
@@ -366,7 +366,7 @@ static int git_pull_config(const char *var, const char *value, void *cb)
 			RECURSE_SUBMODULES_ON : RECURSE_SUBMODULES_OFF;
 		return 0;
 	} else if (!strcmp(var, "gpg.mintrustlevel")) {
-		check_trust_level = 0;
+		gpg_flags ^= GPG_VERIFY_COMPAT;
 	}
 
 	status = git_gpg_config(var, value, cb);
@@ -589,17 +589,9 @@ static int run_fetch(const char *repo, const char **refspecs)
 static int pull_into_void(const struct object_id *merge_head,
 		const struct object_id *curr_head)
 {
-	if (opt_verify_signatures) {
-		struct commit *commit;
-
-		commit = lookup_commit(the_repository, merge_head);
-		if (!commit)
-			die(_("unable to access commit %s"),
-			    oid_to_hex(merge_head));
-
-		verify_merge_signature(commit, opt_verbosity,
-				       check_trust_level);
-	}
+	if (opt_verify_signatures)
+		if (gpg_verify_commit(merge_head, NULL, NULL, gpg_flags))
+			return 1;
 
 	/*
 	 * Two-way merge: we treat the index as based on an empty tree,

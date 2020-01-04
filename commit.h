@@ -364,13 +364,14 @@ int parse_signed_commit(const struct commit *commit,
 int remove_signature(struct strbuf *buf);
 
 /*
- * Check the signature of the given commit. The result of the check is stored
- * in sig->check_result, 'G' for a good signature, 'U' for a good signature
- * from an untrusted signer, 'B' for a bad signature and 'N' for no signature
- * at all.  This may allocate memory for sig->gpg_output, sig->gpg_status,
- * sig->signer and sig->key.
+ * Check the signature of the given commit.  The result is stored in sigc if it
+ * is non-NULL.  However, note that a return code of 0 from this function
+ * should be used to determine if the signature verified successfully, because
+ * multiple members in the signature_check structure are needed to sufficiently
+ * determine the outcome.
  */
-int check_commit_signature(const struct commit *commit, struct signature_check *sigc);
+int gpg_verify_commit(const struct object_id *oid, const char *name_to_report,
+		      struct signature_check *sigc, unsigned flags);
 
 /* record author-date for each commit object */
 struct author_date_slab;
@@ -378,24 +379,6 @@ void record_author_date(struct author_date_slab *author_date,
 			struct commit *commit);
 
 int compare_commits_by_author_date(const void *a_, const void *b_, void *unused);
-
-/*
- * Verify a single commit with check_commit_signature() and die() if it is not
- * a good signature. This isn't really suitable for general use, but is a
- * helper to implement consistent logic for pull/merge --verify-signatures.
- *
- * The check_trust parameter is meant for backward-compatibility.  The GPG
- * interface verifies key trust with a default trust level that is below the
- * default trust level for merge operations.  Its value should be non-zero if
- * the user hasn't set a minimum trust level explicitly in their configuration.
- *
- * If the user has set a minimum trust level, then that value should be obeyed
- * and check_trust should be zero, even if the configured trust level is below
- * the default trust level for merges.
- */
-void verify_merge_signature(struct commit *commit, int verbose,
-			    int check_trust);
-
 int compare_commits_by_commit_date(const void *a_, const void *b_, void *unused);
 int compare_commits_by_gen_then_commit_date(const void *a_, const void *b_, void *unused);
 

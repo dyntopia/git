@@ -7,6 +7,7 @@ struct strbuf;
 #define GPG_VERIFY_RAW (1 << 1)
 #define GPG_VERIFY_FULL (1 << 2)
 #define GPG_VERIFY_SHORT (1 << 3)
+#define GPG_VERIFY_COMPAT (1 << 4)
 
 enum signature_trust_level {
 	TRUST_UNDEFINED,
