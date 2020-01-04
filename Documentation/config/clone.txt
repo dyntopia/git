@@ -1,0 +1,3 @@
+clone.verifySignatures::
+	If true, this is equivalent to the --verify-signatures command
+	line option. See linkgit:git-clone[1] for details.

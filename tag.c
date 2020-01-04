@@ -13,17 +13,19 @@ const char *tag_type = "tag";
 static int run_gpg_verify(const struct object_id *oid, const char *buf,
 			  unsigned long size, unsigned flags)
 {
-	struct signature_check sigc;
+	struct signature_check sigc = { .result = 'N' };
 	size_t payload_size;
-	int ret;
-
-	memset(&sigc, 0, sizeof(sigc));
+	int ret = 1;
 
 	payload_size = parse_signature(buf, size);
 
 	if (size == payload_size) {
 		if (flags & GPG_VERIFY_VERBOSE)
 			write_in_full(1, buf, payload_size);
+
+		/* maybe print a detailed error message */
+		print_signature_buffer(oid, &sigc, ret, flags);
+
 		return error("no signature found");
 	}
 

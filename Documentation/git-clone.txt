@@ -285,6 +285,10 @@ or `--mirror` is given)
 	The number of submodules fetched at the same time.
 	Defaults to the `submodule.fetchJobs` option.
 
+--verify-signatures::
+--no-verify-signatures::
+	Verify that the newly created HEAD is signed with a valid key.
+
 <repository>::
 	The (possibly remote) repository to clone from.  See the
 	<<URLS,GIT URLS>> section below for more information on specifying

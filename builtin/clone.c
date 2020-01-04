@@ -32,6 +32,8 @@
 #include "connected.h"
 #include "packfile.h"
 #include "list-objects-filter-options.h"
+#include "object.h"
+#include "tag.h"
 
 /*
  * Overall FIXMEs:
@@ -54,6 +56,7 @@ static int deepen;
 static char *option_template, *option_depth, *option_since;
 static char *option_origin = NULL;
 static char *option_branch = NULL;
+static int option_verify_signatures = -1;
 static struct string_list option_not = STRING_LIST_INIT_NODUP;
 static const char *real_git_dir;
 static char *option_upload_pack = "git-upload-pack";
@@ -120,6 +123,8 @@ static struct option builtin_clone_options[] = {
 		   N_("use <name> instead of 'origin' to track upstream")),
 	OPT_STRING('b', "branch", &option_branch, N_("branch"),
 		   N_("checkout <branch> instead of the remote's HEAD")),
+	OPT_BOOL(0, "verify-signatures", &option_verify_signatures,
+		 N_("verify the GPG signature of the newly created HEAD")),
 	OPT_STRING('u', "upload-pack", &option_upload_pack, N_("path"),
 		   N_("path to git-upload-pack on the remote")),
 	OPT_STRING(0, "depth", &option_depth, N_("depth"),
@@ -929,6 +934,40 @@ static int path_exists(const char *path)
 	return !stat(path, &sb);
 }
 
+static int verify_signature(const struct ref *our, const struct ref *remote)
+{
+	const struct object_id *oid = our ? &our->old_oid : &remote->old_oid;
+	enum object_type type = oid_object_info(the_repository, oid, NULL);
+	int flags = option_verbosity ? GPG_VERIFY_FULL : GPG_VERIFY_SHORT;
+
+	if (type == OBJ_COMMIT)
+		return gpg_verify_commit(oid, NULL, NULL, flags);
+	if (type == OBJ_TAG)
+		return gpg_verify_tag(oid, NULL, flags);
+	return error(_("%s: unknown object type: %s"),
+		     find_unique_abbrev(oid, DEFAULT_ABBREV), type_name(type));
+}
+
+static int git_clone_config(const char *var, const char *value, void *cb)
+{
+	int status;
+
+	if (!strcmp(var, "clone.verifysignatures")) {
+		option_verify_signatures = git_config_bool(var, value);
+		return 0;
+	}
+
+	if (!strcmp(var, "gpg.verifysignatures") &&
+	    option_verify_signatures < 0)
+		option_verify_signatures = git_config_bool(var, value);
+
+	status = git_gpg_config(var, value, cb);
+	if (status)
+		return status;
+
+	return git_default_config(var, value, cb);
+}
+
 int cmd_clone(int argc, const char **argv, const char *prefix)
 {
 	int is_bundle = 0, is_local;
@@ -952,6 +991,9 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 	struct argv_array ref_prefixes = ARGV_ARRAY_INIT;
 
 	packet_trace_identity("clone");
+
+	git_config(git_clone_config, NULL);
+
 	argc = parse_options(argc, argv, prefix, builtin_clone_options,
 			     builtin_clone_usage, 0);
 
@@ -1266,6 +1308,10 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 		clone_local(path, git_dir);
 	else if (refs && complete_refs_before_fetch)
 		transport_fetch_refs(transport, mapped_refs);
+
+	if (option_verify_signatures > 0)
+		if (verify_signature(our_head_points_at, remote_head))
+			die(_("Signature verification failed"));
 
 	update_remote_refs(refs, mapped_refs, remote_head_points_at,
 			   branch_top.buf, reflog_msg.buf, transport,
