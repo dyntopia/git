@@ -63,7 +63,7 @@ static int git_verify_commit_config(const char *var, const char *value, void *cb
 int cmd_verify_commit(int argc, const char **argv, const char *prefix)
 {
 	int i = 1, verbose = 0, had_error = 0;
-	unsigned flags = 0;
+	unsigned flags = GPG_VERIFY_FULL;
 	const struct option verify_commit_options[] = {
 		OPT__VERBOSE(&verbose, N_("print commit contents")),
 		OPT_BIT(0, "raw", &flags, N_("print raw gpg status output"), GPG_VERIFY_RAW),

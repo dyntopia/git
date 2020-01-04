@@ -112,10 +112,10 @@ static int verify_tag(const char *name, const char *ref,
 {
 	int flags;
 	const struct ref_format *format = cb_data;
-	flags = GPG_VERIFY_VERBOSE;
+	flags = GPG_VERIFY_FULL | GPG_VERIFY_VERBOSE;
 
 	if (format->format)
-		flags = GPG_VERIFY_OMIT_STATUS;
+		flags = 0;
 
 	if (gpg_verify_tag(oid, name, flags))
 		return -1;

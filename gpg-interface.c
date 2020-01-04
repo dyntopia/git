@@ -341,7 +341,7 @@ void print_signature_buffer(const struct signature_check *sigc, unsigned flags)
 	if (flags & GPG_VERIFY_VERBOSE && sigc->payload)
 		fputs(sigc->payload, stdout);
 
-	if (output)
+	if (flags & GPG_VERIFY_FULL && output)
 		fputs(output, stderr);
 }
 
