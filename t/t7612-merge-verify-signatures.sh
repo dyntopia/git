@@ -125,6 +125,33 @@ test_expect_success GPG 'merge commit with bad signature with merge.verifySignat
 	git merge --no-verify-signatures $(cat forged.commit)
 '
 
+test_expect_success GPG 'merge commit with bad signature with gpg.verifySignatures=true and --no-verify-signatures' '
+	test_when_finished "git reset --hard && git checkout initial" &&
+	test_config gpg.verifySignatures true &&
+	git merge --no-verify-signatures $(cat forged.commit)
+'
+
+test_expect_success GPG 'merge commit with bad signature with gpg.verifySignatures=true and merge.verifySignatures=false' '
+	test_when_finished "git reset --hard && git checkout initial" &&
+	test_config gpg.verifySignatures true &&
+	test_config merge.verifySignatures false &&
+	git merge $(cat forged.commit)
+'
+
+test_expect_success GPG 'merge commit with bad signature with clone.verifySignatures=false and gpg.verifySignatures=true' '
+	test_when_finished "git reset --hard && git checkout initial" &&
+	test_config merge.verifySignatures false &&
+	test_config gpg.verifySignatures true &&
+	git merge $(cat forged.commit)
+'
+
+test_expect_success GPG 'merge commit with bad signature with gpg.verifySignatures=true' '
+	test_when_finished "git reset --hard && git checkout initial" &&
+	test_config gpg.verifySignatures true &&
+	test_must_fail git merge $(cat forged.commit) 2>mergeerror &&
+	test_i18ngrep "has a bad GPG signature allegedly by" mergeerror
+'
+
 test_expect_success GPG 'merge unsigned commit into unborn branch' '
 	test_when_finished "git checkout initial" &&
 	git checkout --orphan unborn &&

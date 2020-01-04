@@ -28,7 +28,9 @@ merge.ff::
 
 merge.verifySignatures::
 	If true, this is equivalent to the --verify-signatures command
-	line option. See linkgit:git-merge[1] for details.
+	line option. See linkgit:git-merge[1] for details.  Also see
+	`gpg.verifySignatures` for a global option to enable signature
+	verification.
 
 include::fmt-merge-msg.txt[]
 

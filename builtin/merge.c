@@ -61,7 +61,7 @@ static const char * const builtin_merge_usage[] = {
 static int show_diffstat = 1, shortlog_len = -1, squash;
 static int option_commit = -1;
 static int option_edit = -1;
-static int allow_trivial = 1, have_message, verify_signatures;
+static int allow_trivial = 1, have_message, verify_signatures = -1;
 static int overwrite_ignore = 1;
 static unsigned gpg_flags = GPG_VERIFY_SHORT | GPG_VERIFY_COMPAT;
 static struct strbuf merge_msg = STRBUF_INIT;
@@ -609,6 +609,8 @@ static int git_merge_config(const char *k, const char *v, void *cb)
 	if (!strcmp(k, "merge.diffstat") || !strcmp(k, "merge.stat"))
 		show_diffstat = git_config_bool(k, v);
 	else if (!strcmp(k, "merge.verifysignatures"))
+		verify_signatures = git_config_bool(k, v);
+	else if (!strcmp(k, "gpg.verifysignatures") && verify_signatures < 0)
 		verify_signatures = git_config_bool(k, v);
 	else if (!strcmp(k, "pull.twohead"))
 		return git_config_string(&pull_twohead, k, v);
@@ -1399,7 +1401,7 @@ int cmd_merge(int argc, const char **argv, const char *prefix)
 		if (remoteheads->next)
 			die(_("Can merge only exactly one commit into empty head"));
 
-		if (verify_signatures &&
+		if (verify_signatures == 1 &&
 		    gpg_verify_commit(&remoteheads->item->object.oid, NULL,
 				      NULL, gpg_flags))
 			die(_("Signature verification failed"));
@@ -1423,7 +1425,7 @@ int cmd_merge(int argc, const char **argv, const char *prefix)
 		usage_with_options(builtin_merge_usage,
 			builtin_merge_options);
 
-	if (verify_signatures) {
+	if (verify_signatures == 1) {
 		for (p = remoteheads; p; p = p->next) {
 			if (gpg_verify_commit(&p->item->object.oid, NULL, NULL,
 					      gpg_flags))

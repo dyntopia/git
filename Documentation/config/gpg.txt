@@ -33,3 +33,9 @@ gpg.minTrustLevel::
 * `marginal`
 * `fully`
 * `ultimate`
+
+gpg.verifySignatures::
+	Verify that commits are signed with a valid key for operations
+	that support signature verification.  This option act as a
+	global default and can be overridden in sections specific to
+	individual operations.
