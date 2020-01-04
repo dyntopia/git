@@ -10,7 +10,8 @@
 
 const char *tag_type = "tag";
 
-static int run_gpg_verify(const char *buf, unsigned long size, unsigned flags)
+static int run_gpg_verify(const struct object_id *oid, const char *buf,
+			  unsigned long size, unsigned flags)
 {
 	struct signature_check sigc;
 	size_t payload_size;
@@ -28,7 +29,7 @@ static int run_gpg_verify(const char *buf, unsigned long size, unsigned flags)
 
 	ret = check_signature(buf, payload_size, buf + payload_size,
 				size - payload_size, &sigc);
-	print_signature_buffer(&sigc, flags);
+	print_signature_buffer(oid, &sigc, ret, flags);
 
 	signature_check_clear(&sigc);
 	return ret;
@@ -57,7 +58,7 @@ int gpg_verify_tag(const struct object_id *oid, const char *name_to_report,
 				name_to_report :
 				find_unique_abbrev(oid, DEFAULT_ABBREV));
 
-	ret = run_gpg_verify(buf, size, flags);
+	ret = run_gpg_verify(oid, buf, size, flags);
 
 	free(buf);
 	return ret;

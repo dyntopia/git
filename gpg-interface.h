@@ -6,6 +6,7 @@ struct strbuf;
 #define GPG_VERIFY_VERBOSE (1 << 0)
 #define GPG_VERIFY_RAW (1 << 1)
 #define GPG_VERIFY_FULL (1 << 2)
+#define GPG_VERIFY_SHORT (1 << 3)
 
 enum signature_trust_level {
 	TRUST_UNDEFINED,
@@ -60,7 +61,8 @@ const char *get_signing_key(void);
 int check_signature(const char *payload, size_t plen,
 		    const char *signature, size_t slen,
 		    struct signature_check *sigc);
-void print_signature_buffer(const struct signature_check *sigc,
+void print_signature_buffer(const struct object_id *oid,
+			    const struct signature_check *sigc, int status,
 			    unsigned flags);
 
 #endif

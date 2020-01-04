@@ -5,6 +5,8 @@
 #include "gpg-interface.h"
 #include "sigchain.h"
 #include "tempfile.h"
+#include "object.h"
+#include "object-store.h"
 
 static char *configured_signing_key;
 static enum signature_trust_level configured_min_trust_level = TRUST_UNDEFINED;
@@ -333,16 +335,53 @@ int check_signature(const char *payload, size_t plen, const char *signature,
 	return !!status;
 }
 
-void print_signature_buffer(const struct signature_check *sigc, unsigned flags)
+void print_signature_buffer(const struct object_id *oid,
+			    const struct signature_check *sigc, int status,
+			    unsigned flags)
 {
 	const char *output = flags & GPG_VERIFY_RAW ?
 		sigc->gpg_status : sigc->gpg_output;
+	char hex[GIT_MAX_HEXSZ + 1];
+	char *type;
 
 	if (flags & GPG_VERIFY_VERBOSE && sigc->payload)
 		fputs(sigc->payload, stdout);
 
 	if (flags & GPG_VERIFY_FULL && output)
 		fputs(output, stderr);
+
+	if (flags & GPG_VERIFY_SHORT && oid) {
+		type = xstrdup_or_null(
+			type_name(oid_object_info(the_repository, oid, NULL)));
+		if (!type)
+			type = xstrdup("object");
+		*type = toupper(*type);
+
+		find_unique_abbrev_r(hex, oid, DEFAULT_ABBREV);
+
+		switch (sigc->result) {
+		case 'G':
+			if (status)
+				error(_("%s %s has an untrusted GPG signature, "
+					"allegedly by %s."),
+				      type, hex, sigc->signer);
+			else
+				printf(_("%s %s has a good GPG signature by %s\n"),
+				       type, hex, sigc->signer);
+			break;
+		case 'N':
+			error(_("%s %s does not have a GPG signature."), type,
+			      hex);
+			break;
+		default:
+			error(_("%s %s has a bad GPG signature "
+				"allegedly by %s."),
+			      type, hex, sigc->signer);
+			break;
+		}
+
+		free(type);
+	}
 }
 
 size_t parse_signature(const char *buf, size_t size)
