@@ -151,6 +151,42 @@ test_expect_success 'sign off' '
 
 '
 
+test_expect_success 'commit.signOff=true' '
+	test_config commit.signOff true &&
+	echo 1 >>positive &&
+	git add positive &&
+	git commit -m "thank you" &&
+	git cat-file commit HEAD >commit.msg &&
+	sed -ne "s/Signed-off-by: //p" commit.msg >actual &&
+	git var GIT_COMMITTER_IDENT >ident &&
+	sed -e "s/>.*/>/" ident >expected &&
+	test_cmp expected actual
+'
+
+test_expect_success 'commit.signOff=true and --no-signoff' '
+	test_config commit.signOff true &&
+	echo 2 >>positive &&
+	git add positive &&
+	git commit --no-signoff -m "thank you" &&
+	git cat-file commit HEAD >commit.msg &&
+	sed -ne "s/Signed-off-by: //p" commit.msg >actual &&
+	git var GIT_COMMITTER_IDENT >ident &&
+	sed -e "s/>.*/>/" ident >expected &&
+	! test_cmp expected actual
+'
+
+test_expect_success 'commit.signOff=false and --signoff' '
+	test_config commit.signOff false &&
+	echo 1 >>positive &&
+	git add positive &&
+	git commit --signoff -m "thank you" &&
+	git cat-file commit HEAD >commit.msg &&
+	sed -ne "s/Signed-off-by: //p" commit.msg >actual &&
+	git var GIT_COMMITTER_IDENT >ident &&
+	sed -e "s/>.*/>/" ident >expected &&
+	test_cmp expected actual
+'
+
 test_expect_success 'multiple -m' '
 
 	>negative &&

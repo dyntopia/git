@@ -15,6 +15,14 @@ commit.gpgSign::
 	convenient to use an agent to avoid typing your GPG passphrase
 	several times.
 
+commit.signOff::
+	A boolean to specify whether commits should enable the
+	`-s/--signoff` option by default.  *Note:* Adding the
+	Signed-off-by: line to a commit message should be a conscious
+	act and means that you certify you have the rights to submit the
+	work under the same open source license.  Please see the
+	'SubmittingPatches' document for further discussion.
+
 commit.status::
 	A boolean to enable/disable inclusion of status information in the
 	commit message template when using an editor to prepare the commit
